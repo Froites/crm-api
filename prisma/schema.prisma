@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(AGENT)
+  avatar    String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  assignedLeads Lead[] @relation("AssignedAgent")
+  createdLeads  Lead[] @relation("CreatedBy")
+  interactions  Interaction[]
+
+  @@map("users")
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String?
+  company     String?
+  position    String?
+  status      LeadStatus @default(NEW)
+  source      LeadSource @default(WEBSITE)
+  value       Float      @default(0)
+  priority    Priority   @default(MEDIUM)
+  description String?
+  notes       String?
+  tags        String[]
+  lastContact DateTime?
+  nextContact DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  assignedAgentId String?
+  assignedAgent   User?   @relation("AssignedAgent", fields: [assignedAgentId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id])
+
+  interactions Interaction[]
+
+  @@map("leads")
+}
+
+model Interaction {
+  id          String          @id @default(cuid())
+  type        InteractionType
+  subject     String
+  description String?
+  date        DateTime        @default(now())
+  duration    Int?
+  outcome     String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("interactions")
+}
+
+model Settings {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  timezone      String   @default("UTC")
+  language      String   @default("pt-BR")
+  currency      String   @default("BRL")
+  dateFormat    String   @default("DD/MM/YYYY")
+  notifications Json     @default("{}")
+  preferences   Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("settings")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  AGENT
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+  ARCHIVED
+}
+
+enum LeadSource {
+  WEBSITE
+  SOCIAL_MEDIA
+  EMAIL_MARKETING
+  PHONE_CALL
+  REFERRAL
+  EVENT
+  ADVERTISEMENT
+  ORGANIC_SEARCH
+  PAID_SEARCH
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum InteractionType {
+  CALL
+  EMAIL
+  MEETING
+  WHATSAPP
+  SMS
+  NOTE
+  TASK
+}
