@@ -66,8 +66,13 @@ export class LeadsController {
     @Query() filters: LeadFilters,
     @Request() req: any,
   ): Promise<PaginatedResponse> {
+    const cleanFilters = {
+      ...filters,
+      page: parseInt(filters.page?.toString() || '1'),
+      limit: parseInt(filters.limit?.toString() || '10')
+    };
     const result = await this.leadsService.findAll(
-      filters,
+      cleanFilters,
       req.user.role,
       req.user.id,
     );
